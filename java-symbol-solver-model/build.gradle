@@ -1,4 +1,8 @@
-
+repositories {
+    mavenCentral()
+    jcenter()
+    maven { url "http://repo.maven.apache.org/maven2" }
+  }
 description = ''
 dependencies {
     compile group: 'com.github.javaparser', name: 'javaparser-core', version:'2.3.0'
