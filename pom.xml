@@ -10,7 +10,7 @@
   <groupId>me.tomassetti</groupId>
   <artifactId>java-symbol-solver-parent</artifactId>
   <packaging>pom</packaging>
-  <version>0.3-SNAPSHOT</version>
+  <version>0.2-SNAPSHOT</version>
   <name>java-symbol-solver-parent</name>
   <url>https://github.com/ftomassetti/java-symbol-solver</url>
   <description>A Symbol Solver for Java, built on top of JavaParser</description>
@@ -52,52 +52,36 @@
   </distributionManagement>
 
   <pluginRepositories>
-    <pluginRepository>
-      <id>atlassian-public</id>
-      <url>https://maven.atlassian.com/repository/public</url>
-      <snapshots>
-        <enabled>true</enabled>
-        <updatePolicy>never</updatePolicy>
-        <checksumPolicy>warn</checksumPolicy>
-      </snapshots>
-      <releases>
-        <enabled>true</enabled>
-        <checksumPolicy>warn</checksumPolicy>
-      </releases>
-    </pluginRepository>
-    <pluginRepository>
-      <id>jcenter</id>
-      <name>jcenter</name>
-      <url>http://jcenter.bintray.com </url>
-    </pluginRepository>
-    <pluginRepository>
-      <id>jfrog-plugins</id>
-      <name>jfrog-plugins-dist</name>
-      <url>http://repo.jfrog.org/artifactory/plugins-releases</url>
-    </pluginRepository>
+
   </pluginRepositories>
 
-  <build>
-    <plugins>
-      <plugin>
-        <groupId>com.devexperts.bintray</groupId>
-        <artifactId>bintray-maven-plugin</artifactId>
-        <version>1.0.1</version>
-        <configuration>
-          <id>bintray-ftomassetti</id>
-          <url>https://api.bintray.com/maven/ftomassetti/maven/java-symbol-solver</url>
-        </configuration>
-        <executions>
-          <execution>
-            <id>bintray-deploy</id>
-            <goals>
-              <goal>deploy</goal>
-              <goal>publish</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-    </plugins>
-  </build>
+<profiles>
+  <profile>
+            <id>sign-artifacts</id>
+            <activation>
+                <property>
+                    <name>sign</name>
+                    <value>true</value>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-gpg-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>sign-artifacts</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>sign</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+      </profiles>
 
 </project>
