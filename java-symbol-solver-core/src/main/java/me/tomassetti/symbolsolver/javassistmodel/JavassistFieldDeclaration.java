@@ -2,8 +2,12 @@ package me.tomassetti.symbolsolver.javassistmodel;
 
 import javassist.CtField;
 import javassist.NotFoundException;
-import me.tomassetti.symbolsolver.model.typesystem.TypeUsage;
+import me.tomassetti.symbolsolver.model.declarations.AccessLevel;
+import me.tomassetti.symbolsolver.model.declarations.TypeDeclaration;
+import me.tomassetti.symbolsolver.model.usages.typesystem.Type;
 import me.tomassetti.symbolsolver.model.resolution.TypeSolver;
+
+import java.lang.reflect.Modifier;
 
 public class JavassistFieldDeclaration implements me.tomassetti.symbolsolver.model.declarations.FieldDeclaration {
     private CtField ctField;
@@ -14,12 +18,17 @@ public class JavassistFieldDeclaration implements me.tomassetti.symbolsolver.mod
     }
 
     @Override
-    public TypeUsage getType() {
+    public Type getType() {
         try {
             return JavassistFactory.typeUsageFor(ctField.getType(), typeSolver);
         } catch (NotFoundException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    @Override
+    public boolean isStatic() {
+        return Modifier.isStatic(ctField.getModifiers());
     }
 
     @Override
@@ -38,12 +47,17 @@ public class JavassistFieldDeclaration implements me.tomassetti.symbolsolver.mod
     }
 
     @Override
-    public boolean isVariable() {
+    public boolean isType() {
         return false;
     }
 
     @Override
-    public boolean isType() {
-        return false;
+    public AccessLevel accessLevel() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public TypeDeclaration declaringType() {
+        throw new UnsupportedOperationException();
     }
 }

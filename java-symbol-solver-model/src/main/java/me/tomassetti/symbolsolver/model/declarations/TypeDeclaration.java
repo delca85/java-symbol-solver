@@ -1,16 +1,14 @@
 package me.tomassetti.symbolsolver.model.declarations;
 
-import me.tomassetti.symbolsolver.model.invokations.MethodUsage;
-import me.tomassetti.symbolsolver.model.resolution.Context;
-import me.tomassetti.symbolsolver.model.resolution.SymbolReference;
-import me.tomassetti.symbolsolver.model.resolution.TypeSolver;
-import me.tomassetti.symbolsolver.model.typesystem.ReferenceTypeUsage;
-import me.tomassetti.symbolsolver.model.typesystem.TypeUsage;
+import me.tomassetti.symbolsolver.model.usages.MethodUsage;
+import me.tomassetti.symbolsolver.model.usages.typesystem.ReferenceType;
+import me.tomassetti.symbolsolver.model.usages.typesystem.Type;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * A declaration of a type. It could be a primitive type, an enum, a class, an interface or a type variable.
@@ -18,69 +16,23 @@ import java.util.Set;
  *
  * @author Federico Tomassetti
  */
-public interface TypeDeclaration extends Declaration, TypeParametrized {
-    String getQualifiedName();
+public interface TypeDeclaration extends Declaration, TypeParametrizable {
 
-    @Deprecated
-    Context getContext();
+    ///
+    /// Containment
+    ///
 
-    SymbolReference<MethodDeclaration> solveMethod(String name, List<TypeUsage> parameterTypes);
-
-    @Deprecated
-    default Optional<MethodUsage> solveMethodAsUsage(String name, List<TypeUsage> parameterTypes, TypeSolver typeSolver, Context invokationContext, List<TypeUsage> typeParameterValues) {
-        return getContext().solveMethodAsUsage(name, parameterTypes, typeSolver);
+    default Set<TypeDeclaration> internalTypes() {
+        throw new UnsupportedOperationException();
     }
 
-    boolean isAssignableBy(TypeUsage typeUsage);
-
-    default boolean canBeAssignedTo(TypeDeclaration other) {
-        return other.isAssignableBy(this);
+    default Optional<TypeDeclaration> containerType() {
+        throw new UnsupportedOperationException();
     }
 
-    /**
-     * Note that the type of the field should be expressed using the type variables of this particular type.
-     * Consider for example:
-     *
-     * class Foo<E> { E field; }
-     *
-     * class Bar extends Foo<String> { }
-     *
-     * When calling getField("field") on Foo I should get a FieldDeclaration with type E, while calling it on
-     * Bar I should get a FieldDeclaration with type String.
-     */
-    FieldDeclaration getField(String name);
-
-    boolean hasField(String name);
-    
-    List<FieldDeclaration> getAllFields();
-
-    boolean isAssignableBy(TypeDeclaration other);
-
-    SymbolReference<? extends ValueDeclaration> solveSymbol(String substring, TypeSolver typeSolver);
-
-    /**
-     * Try to solve a symbol just in the declaration, it does not delegate to the container.
-     *
-     * @param substring
-     * @param typeSolver
-     * @return
-     */
-    SymbolReference<TypeDeclaration> solveType(String substring, TypeSolver typeSolver);
-
-    List<ReferenceTypeUsage> getAncestors();
-    
-    default List<ReferenceTypeUsage> getAllAncestors() {
-    	List<ReferenceTypeUsage> ancestors = new ArrayList<>();
-    	for (ReferenceTypeUsage ancestor : getAncestors()) {
-    		ancestors.add(ancestor);
-    		ancestors.addAll(ancestor.getAllAncestors());
-    	}
-    	return ancestors;
-    }
-
-    Set<MethodDeclaration> getDeclaredMethods();
-
-    Set<MethodUsage> getAllMethods();
+    ///
+    /// Misc
+    ///
 
     default boolean isClass() {
         return false;
@@ -109,12 +61,97 @@ public interface TypeDeclaration extends Declaration, TypeParametrized {
     }
 
     default ClassDeclaration asClass() {
-        throw new UnsupportedOperationException(this.getClass().getCanonicalName());
+        throw new UnsupportedOperationException(String.format("%s is not a class", this));
     }
 
     default InterfaceDeclaration asInterface() {
-        throw new UnsupportedOperationException(this.getClass().getCanonicalName());
+        throw new UnsupportedOperationException(String.format("%s is not an interface", this));
     }
+
+    default EnumDeclaration asEnum() {
+        throw new UnsupportedOperationException(String.format("%s is not an enum", this));
+    }
+
+    String getQualifiedName();
+
+    ///
+    /// Ancestors
+    ///
+
+    List<ReferenceType> getAncestors();
+
+    /**
+     * This list does not contains duplicates with the exacting same type parameters.
+     */
+    default List<ReferenceType> getAllAncestors() {
+        List<ReferenceType> ancestors = new ArrayList<>();
+        for (ReferenceType ancestor : getAncestors()) {
+            ancestors.add(ancestor);
+            for (ReferenceType inheritedAncestor : ancestor.getAllAncestors()) {
+                if (!ancestors.contains(inheritedAncestor)) {
+                    ancestors.add(inheritedAncestor);
+                }
+            }
+        }
+        return ancestors;
+    }
+
+    ///
+    /// Fields
+    ///
+
+    /**
+     * Note that the type of the field should be expressed using the type variables of this particular type.
+     * Consider for example:
+     *
+     * class Foo<E> { E field; }
+     *
+     * class Bar extends Foo<String> { }
+     *
+     * When calling getField("field") on Foo I should get a FieldDeclaration with type E, while calling it on
+     * Bar I should get a FieldDeclaration with type String.
+     */
+    FieldDeclaration getField(String name);
+
+    boolean hasField(String name);
+    
+    List<FieldDeclaration> getAllFields();
+
+    default List<FieldDeclaration> getAllNonStaticFields() {
+        return getAllFields().stream().filter(it -> !it.isStatic()).collect(Collectors.toList());
+    }
+
+    default List<FieldDeclaration> getAllStaticFields() {
+        return getAllFields().stream().filter(it -> it.isStatic()).collect(Collectors.toList());
+    }
+
+    default List<FieldDeclaration> getDeclaredFields() {
+        return getAllFields().stream().filter(it ->it.declaringType().getQualifiedName().equals(getQualifiedName())).collect(Collectors.toList());
+    }
+
+    ///
+    /// Methods
+    ///
+
+    Set<MethodDeclaration> getDeclaredMethods();
+
+    Set<MethodUsage> getAllMethods();
+
+    ///
+    /// Assignability
+    ///
+
+    boolean isAssignableBy(Type type);
+
+    default boolean canBeAssignedTo(TypeDeclaration other) {
+        return other.isAssignableBy(this);
+    }
+
+    boolean isAssignableBy(TypeDeclaration other);
+
+    ///
+    /// Annotations
+    ///
 
     boolean hasDirectlyAnnotation(String canonicalName);
 
@@ -122,6 +159,7 @@ public interface TypeDeclaration extends Declaration, TypeParametrized {
         if (hasDirectlyAnnotation(canonicalName)) {
             return true;
         }
-        return getAllAncestors().stream().anyMatch(it -> it.asReferenceTypeUsage().getTypeDeclaration().hasDirectlyAnnotation(canonicalName));
+        return getAllAncestors().stream().anyMatch(it -> it.asReferenceType().getTypeDeclaration().hasDirectlyAnnotation(canonicalName));
     }
+
 }

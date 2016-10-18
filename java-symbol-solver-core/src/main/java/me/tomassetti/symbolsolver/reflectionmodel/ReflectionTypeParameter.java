@@ -1,6 +1,6 @@
 package me.tomassetti.symbolsolver.reflectionmodel;
 
-import me.tomassetti.symbolsolver.model.resolution.TypeParameter;
+import me.tomassetti.symbolsolver.model.declarations.TypeParameterDeclaration;
 import me.tomassetti.symbolsolver.model.resolution.TypeSolver;
 
 import java.lang.reflect.GenericDeclaration;
@@ -9,7 +9,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class ReflectionTypeParameter implements TypeParameter {
+public class ReflectionTypeParameter implements TypeParameterDeclaration {
 
     private TypeVariable typeVariable;
     private boolean declaredOnClass;
@@ -31,9 +31,9 @@ public class ReflectionTypeParameter implements TypeParameter {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof TypeParameter)) return false;
+        if (!(o instanceof TypeParameterDeclaration)) return false;
 
-        TypeParameter that = (TypeParameter) o;
+        TypeParameterDeclaration that = (TypeParameterDeclaration) o;
 
         if (!getName().equals(that.getName())) {
             return false;
@@ -44,10 +44,6 @@ public class ReflectionTypeParameter implements TypeParameter {
         if (declaredOnMethod() != that.declaredOnMethod()) {
             return false;
         }
-        // TODO
-        //if (declaredOnClass && !getQNameOfDeclaringClass().equals(that.getQNameOfDeclaringClass())) {
-        //    return false;
-        //}
         // TODO check bounds
         return true;
     }
@@ -75,11 +71,15 @@ public class ReflectionTypeParameter implements TypeParameter {
     }
 
     @Override
-    public String getQNameOfDeclaringClass() {
-        if (qNameOfDeclaringClass == null) {
-            throw new UnsupportedOperationException();
+    public String getQualifiedName() {
+        if (this.declaredOnClass()) {
+            return String.format("%s.%s", qNameOfDeclaringClass, getName());
         } else {
-            return qNameOfDeclaringClass;
+            throw new UnsupportedOperationException(typeVariable.getGenericDeclaration().getClass().getCanonicalName());
+            //typeVariable.getGenericDeclaration()
+            //com.github.javaparser.ast.body.MethodDeclaration jpMethodDeclaration = (com.github.javaparser.ast.body.MethodDeclaration)wrappedNode.getParentNode();
+            //MethodDeclaration methodDeclaration = new JavaParserMethodDeclaration(jpMethodDeclaration, typeSolver());
+            //return String.format("%s.%s", methodDeclaration.getQualifiedSignature(), getName());
         }
     }
 

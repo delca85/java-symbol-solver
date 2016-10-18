@@ -5,10 +5,15 @@ package me.tomassetti.symbolsolver.model.declarations;
  *
  * @author Federico Tomassetti
  */
-public interface EnumDeclaration extends TypeDeclaration {
+public interface EnumDeclaration extends TypeDeclaration, HasAccessLevel {
 
     @Override
     default boolean isEnum() {
         return true;
+    }
+
+    @Override
+    default EnumDeclaration asEnum() {
+        return this;
     }
 }

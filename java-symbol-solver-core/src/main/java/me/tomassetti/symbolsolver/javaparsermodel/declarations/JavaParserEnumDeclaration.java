@@ -10,17 +10,19 @@ import com.github.javaparser.ast.type.ClassOrInterfaceType;
 
 import me.tomassetti.symbolsolver.logic.AbstractTypeDeclaration;
 import me.tomassetti.symbolsolver.model.declarations.*;
-import me.tomassetti.symbolsolver.model.invokations.MethodUsage;
-import me.tomassetti.symbolsolver.model.resolution.Context;
+import me.tomassetti.symbolsolver.model.usages.MethodUsage;
+import me.tomassetti.symbolsolver.core.resolution.Context;
 import me.tomassetti.symbolsolver.model.resolution.SymbolReference;
-import me.tomassetti.symbolsolver.model.resolution.TypeParameter;
+import me.tomassetti.symbolsolver.model.declarations.TypeParameterDeclaration;
 import me.tomassetti.symbolsolver.model.resolution.TypeSolver;
-import me.tomassetti.symbolsolver.model.typesystem.ArrayTypeUsage;
-import me.tomassetti.symbolsolver.model.typesystem.ReferenceTypeUsage;
-import me.tomassetti.symbolsolver.model.typesystem.ReferenceTypeUsageImpl;
-import me.tomassetti.symbolsolver.model.typesystem.TypeUsage;
+import me.tomassetti.symbolsolver.model.usages.typesystem.ArrayType;
+import me.tomassetti.symbolsolver.model.usages.typesystem.ReferenceType;
+import me.tomassetti.symbolsolver.model.usages.typesystem.ReferenceTypeImpl;
+import me.tomassetti.symbolsolver.model.usages.typesystem.Type;
 import me.tomassetti.symbolsolver.javaparsermodel.JavaParserFactory;
 import me.tomassetti.symbolsolver.javaparsermodel.UnsolvedSymbolException;
+import me.tomassetti.symbolsolver.reflectionmodel.ReflectionFactory;
+import me.tomassetti.symbolsolver.resolution.SymbolSolver;
 
 import java.io.Serializable;
 import java.util.*;
@@ -44,7 +46,7 @@ public class JavaParserEnumDeclaration extends AbstractTypeDeclaration implement
 
     @Override
     public boolean isAssignableBy(TypeDeclaration other) {
-        return isAssignableBy(new ReferenceTypeUsageImpl(other, typeSolver));
+        return isAssignableBy(new ReferenceTypeImpl(other, typeSolver));
     }
 
     @Override
@@ -58,7 +60,6 @@ public class JavaParserEnumDeclaration extends AbstractTypeDeclaration implement
 		return methods;
     }
 
-    @Override
     public Context getContext() {
         return JavaParserFactory.getContext(wrappedNode, typeSolver);
     }
@@ -75,11 +76,6 @@ public class JavaParserEnumDeclaration extends AbstractTypeDeclaration implement
 
     @Override
     public boolean isParameter() {
-        return false;
-    }
-
-    @Override
-    public boolean isVariable() {
         return false;
     }
 
@@ -164,11 +160,11 @@ public class JavaParserEnumDeclaration extends AbstractTypeDeclaration implement
     }
 
     @Override
-    public boolean isAssignableBy(TypeUsage typeUsage) {
-        if (typeUsage.isNull()) {
+    public boolean isAssignableBy(Type type) {
+        if (type.isNull()) {
             return true;
         }
-        return typeUsage.isReferenceType() && typeUsage.asReferenceTypeUsage().getQualifiedName().equals(getQualifiedName());
+        return type.isReferenceType() && type.asReferenceType().getQualifiedName().equals(getQualifiedName());
     }
 
 
@@ -225,19 +221,10 @@ public class JavaParserEnumDeclaration extends AbstractTypeDeclaration implement
         return typeSolver;
     }
 
-    @Override
-    public SymbolReference<MethodDeclaration> solveMethod(String name, List<TypeUsage> parameterTypes) {
+    @Deprecated
+    public Optional<MethodUsage> solveMethodAsUsage(String name, List<Type> parameterTypes, TypeSolver typeSolver, Context invokationContext, List<Type> typeParameterValues) {
         if (name.equals("values") && parameterTypes.isEmpty()) {
-            return SymbolReference.solved(new ValuesMethod());
-        }
-        // TODO add methods inherited from Enum
-        return getContext().solveMethod(name, parameterTypes, typeSolver);
-    }
-
-    @Override
-    public Optional<MethodUsage> solveMethodAsUsage(String name, List<TypeUsage> parameterTypes, TypeSolver typeSolver, Context invokationContext, List<TypeUsage> typeParameterValues) {
-        if (name.equals("values") && parameterTypes.isEmpty()) {
-            return Optional.of(new ValuesMethod().getUsage(null));
+            return Optional.of(new ValuesMethod(this, typeSolver).getUsage(null));
         }
         // TODO add methods inherited from Enum
         return getContext().solveMethodAsUsage(name, parameterTypes, typeSolver);
@@ -293,33 +280,27 @@ public class JavaParserEnumDeclaration extends AbstractTypeDeclaration implement
         return fields;
     }
 
-    @Override
-    public SymbolReference<? extends ValueDeclaration> solveSymbol(String substring, TypeSolver typeSolver) {
-        return getContext().solveSymbol(substring, typeSolver);
-    }
 
     @Override
-    public SymbolReference<TypeDeclaration> solveType(String substring, TypeSolver typeSolver) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public List<ReferenceTypeUsage> getAncestors() {
-        List<ReferenceTypeUsage> ancestors = new ArrayList<>();
+    public List<ReferenceType> getAncestors() {
+        List<ReferenceType> ancestors = new ArrayList<>();
+        ReferenceType enumClass = ReflectionFactory.typeUsageFor(Enum.class, typeSolver).asReferenceType();
+        enumClass = enumClass.replaceParam("E", new ReferenceTypeImpl(this, typeSolver)).asReferenceType();
+        ancestors.add(enumClass);
         if (wrappedNode.getImplements() != null) {
             for (ClassOrInterfaceType implementedType : wrappedNode.getImplements()) {
-                SymbolReference<TypeDeclaration> implementedDeclRef = solveType(implementedType.getName(), typeSolver);
+                SymbolReference<TypeDeclaration> implementedDeclRef = new SymbolSolver(typeSolver).solveTypeInType(this, implementedType.getName());
                 if (!implementedDeclRef.isSolved()) {
                     throw new UnsolvedSymbolException(implementedType.getName());
                 }
-                ancestors.add(new ReferenceTypeUsageImpl(implementedDeclRef.getCorrespondingDeclaration(), typeSolver));
+                ancestors.add(new ReferenceTypeImpl(implementedDeclRef.getCorrespondingDeclaration(), typeSolver));
             }
         }
         return ancestors;
     }
 
     @Override
-    public List<TypeParameter> getTypeParameters() {
+    public List<TypeParameterDeclaration> getTypeParameters() {
         return Collections.emptyList();
     }
 
@@ -333,16 +314,25 @@ public class JavaParserEnumDeclaration extends AbstractTypeDeclaration implement
 		return wrappedNode;
 	}
 
-    private class ValuesMethod implements MethodDeclaration {
+    // Needed by ContextHelper
+    public static class ValuesMethod implements MethodDeclaration {
 
-        @Override
-        public TypeDeclaration declaringType() {
-            return JavaParserEnumDeclaration.this;
+        private JavaParserEnumDeclaration enumDeclaration;
+        private TypeSolver typeSolver;
+
+        public ValuesMethod(JavaParserEnumDeclaration enumDeclaration, TypeSolver typeSolver) {
+            this.enumDeclaration = enumDeclaration;
+            this.typeSolver = typeSolver;
         }
 
         @Override
-        public TypeUsage getReturnType() {
-            return new ArrayTypeUsage(new ReferenceTypeUsageImpl(JavaParserEnumDeclaration.this, typeSolver));
+        public TypeDeclaration declaringType() {
+            return enumDeclaration;
+        }
+
+        @Override
+        public Type getReturnType() {
+            return new ArrayType(new ReferenceTypeImpl(enumDeclaration, typeSolver));
         }
 
         @Override
@@ -359,9 +349,8 @@ public class JavaParserEnumDeclaration extends AbstractTypeDeclaration implement
             throw new UnsupportedOperationException();
         }
 
-        @Override
-        public MethodUsage resolveTypeVariables(Context context, List<TypeUsage> parameterTypes) {
-            return new MethodUsage(this, typeSolver);
+        public MethodUsage resolveTypeVariables(Context context, List<Type> parameterTypes) {
+            return new MethodUsage(this);
         }
 
         @Override
@@ -370,13 +359,8 @@ public class JavaParserEnumDeclaration extends AbstractTypeDeclaration implement
         }
 
         @Override
-        public boolean isPrivate() {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public boolean isPackageProtected() {
-            throw new UnsupportedOperationException();
+        public boolean isDefaultMethod() {
+            return false;
         }
 
         @Override
@@ -385,8 +369,18 @@ public class JavaParserEnumDeclaration extends AbstractTypeDeclaration implement
         }
 
         @Override
-        public List<TypeParameter> getTypeParameters() {
+        public List<TypeParameterDeclaration> getTypeParameters() {
             return Collections.emptyList();
         }
+
+        @Override
+        public AccessLevel accessLevel() {
+            throw new UnsupportedOperationException();
+        }
+    }
+
+    @Override
+    public AccessLevel accessLevel() {
+        throw new UnsupportedOperationException();
     }
 }

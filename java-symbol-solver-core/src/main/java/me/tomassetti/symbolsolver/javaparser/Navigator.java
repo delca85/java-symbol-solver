@@ -8,6 +8,8 @@ import com.github.javaparser.ast.expr.NameExpr;
 import com.github.javaparser.ast.stmt.ReturnStmt;
 import com.github.javaparser.ast.stmt.SwitchStmt;
 
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -197,12 +199,12 @@ public final class Navigator {
         return null;
     }
 
-    private static <N> N findNodeOfGivenClasshHelper(Node node, Class<N> clazz) {
+    private static <N> N findNodeOfGivenClassHelper(Node node, Class<N> clazz) {
         if (clazz.isInstance(node)) {
             return clazz.cast(node);
         }
         for (Node child : node.getChildrenNodes()) {
-            N resChild = findNodeOfGivenClasshHelper(child, clazz);
+            N resChild = findNodeOfGivenClassHelper(child, clazz);
             if (resChild != null) {
                 return resChild;
             }
@@ -211,7 +213,7 @@ public final class Navigator {
     }
 
     public static <N> N findNodeOfGivenClass(Node node, Class<N> clazz) {
-        N res = findNodeOfGivenClasshHelper(node, clazz);
+        N res = findNodeOfGivenClassHelper(node, clazz);
         if (res == null) {
             throw new IllegalArgumentException();
         } else {
@@ -219,7 +221,32 @@ public final class Navigator {
         }
     }
 
+    public static <N> List<N> findAllNodesOfGivenClass(Node node, Class<N> clazz) {
+        List<N> res = new LinkedList<>();
+        findAllNodesOfGivenClassHelper(node, clazz, res);
+        return res;
+    }
+
+    private static <N> void findAllNodesOfGivenClassHelper(Node node, Class<N> clazz, List<N> collector) {
+        if (clazz.isInstance(node)) {
+            collector.add(clazz.cast(node));
+        }
+        for (Node child : node.getChildrenNodes()) {
+            findAllNodesOfGivenClassHelper(child, clazz, collector);
+        }
+    }
+
     public static ReturnStmt findReturnStmt(MethodDeclaration method) {
         return findNodeOfGivenClass(method, ReturnStmt.class);
+    }
+
+    public static <N extends Node> Optional<N> findAncestor(Node node, Class<N> clazz) {
+        if (node.getParentNode() == null) {
+            return Optional.empty();
+        } else if (clazz.isInstance(node.getParentNode())) {
+            return Optional.of(clazz.cast(node.getParentNode()));
+        } else {
+            return findAncestor(node.getParentNode(), clazz);
+        }
     }
 }

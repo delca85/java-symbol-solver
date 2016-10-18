@@ -1,13 +1,13 @@
 package me.tomassetti.symbolsolver.model.declarations;
 
-import me.tomassetti.symbolsolver.model.typesystem.TypeUsage;
-
 /**
  * Declaration of a field.
  *
  * @author Federico Tomassetti
  */
-public interface FieldDeclaration extends ValueDeclaration {
+public interface FieldDeclaration extends ValueDeclaration, HasAccessLevel {
+
+    boolean isStatic();
 
     @Override
     default boolean isField() {
@@ -19,8 +19,6 @@ public interface FieldDeclaration extends ValueDeclaration {
         return this;
     }
 
-    @Deprecated
-    default FieldDeclaration replaceType(TypeUsage fieldType) {
-        throw new UnsupportedOperationException(this.getClass().getCanonicalName());
-    }
+    TypeDeclaration declaringType();
+
 }

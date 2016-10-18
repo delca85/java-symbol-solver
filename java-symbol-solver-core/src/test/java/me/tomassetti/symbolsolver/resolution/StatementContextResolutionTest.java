@@ -9,7 +9,7 @@ import me.tomassetti.symbolsolver.javaparsermodel.JavaParserFacade;
 import me.tomassetti.symbolsolver.javaparser.Navigator;
 import me.tomassetti.symbolsolver.model.declarations.ValueDeclaration;
 import me.tomassetti.symbolsolver.resolution.typesolvers.JreTypeSolver;
-import me.tomassetti.symbolsolver.model.invokations.MethodUsage;
+import me.tomassetti.symbolsolver.model.usages.MethodUsage;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -29,7 +29,7 @@ public class StatementContextResolutionTest extends AbstractResolutionTest {
 
         SymbolReference<? extends ValueDeclaration> ref = JavaParserFacade.get(new JreTypeSolver()).solve(nameExpr);
         assertTrue(ref.isSolved());
-        assertEquals("java.lang.String", ref.getCorrespondingDeclaration().getType().asReferenceTypeUsage().getQualifiedName());
+        assertEquals("java.lang.String", ref.getCorrespondingDeclaration().getType().asReferenceType().getQualifiedName());
     }
 
     @Test
@@ -41,7 +41,7 @@ public class StatementContextResolutionTest extends AbstractResolutionTest {
 
         SymbolReference<? extends ValueDeclaration> ref = JavaParserFacade.get(new JreTypeSolver()).solve(nameExpr);
         assertTrue(ref.isSolved());
-        assertEquals("java.lang.String", ref.getCorrespondingDeclaration().getType().asReferenceTypeUsage().getQualifiedName());
+        assertEquals("java.lang.String", ref.getCorrespondingDeclaration().getType().asReferenceType().getQualifiedName());
     }
 
     @Test
@@ -53,7 +53,7 @@ public class StatementContextResolutionTest extends AbstractResolutionTest {
 
         SymbolReference<? extends ValueDeclaration> ref = JavaParserFacade.get(new JreTypeSolver()).solve(nameExpr);
         assertTrue(ref.isSolved());
-        assertEquals("java.lang.String", ref.getCorrespondingDeclaration().getType().asReferenceTypeUsage().getQualifiedName());
+        assertEquals("java.lang.String", ref.getCorrespondingDeclaration().getType().asReferenceType().getQualifiedName());
     }
 
     @Test
