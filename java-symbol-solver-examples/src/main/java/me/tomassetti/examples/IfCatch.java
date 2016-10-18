@@ -47,7 +47,7 @@ public class IfCatch {
             Expression condition = n.getCondition();
             if (condition instanceof  MethodCallExpr){
                 MethodCallExpr methodCallExprCondition = (MethodCallExpr) condition;
-                System.out.println("[IfStmt]Scope: " + javaParserFacade.getTypeDeclaration(javaParserFacade.getType(methodCallExprCondition.getScope())));
+                System.out.println("[IfStmt]Scope: " + javaParserFacade.getType(methodCallExprCondition.getScope()));
                 System.out.println("[IfStmt]NameExpr: " + methodCallExprCondition.getNameExpr());
                 System.out.println("[IfStmt]Solve simple: " + javaParserFacade.solve(methodCallExprCondition));
                 System.out.println("[IfStmt]Solve: " + javaParserFacade.solveMethodAsUsage(methodCallExprCondition).getDeclaration().declaringType().getQualifiedName().equals((List.class).getName()));
