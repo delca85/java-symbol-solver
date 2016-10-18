@@ -8,7 +8,8 @@ import java.util.List;
 
 public class MainTest{
     public static void main(String[] args){
-        Agenda agenda = new Agenda();
+        Agenda agenda;
+        agenda = new Agenda();
         Person bibi = new Person();
         Address add1 = new Address();
         add1.setCity("Milano");

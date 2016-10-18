@@ -38,5 +38,9 @@ public class Address {
         this.zipCode = zipCode;
     }
 
+    public static void main(String[] args){
+        System.out.println("ciao!");
+    }
+
 
 }
