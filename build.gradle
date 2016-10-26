@@ -21,8 +21,8 @@ allprojects  {
   apply plugin: 'idea'
   apply plugin: 'jacoco'
 
-  group = 'me.tomassetti'
-  version = '0.4.0-SNAPSHOT'
+  group = 'com.github.javaparser'
+  version = '0.4-SNAPSHOT'
 
   repositories {
     mavenCentral()
